@@ -1,0 +1,33 @@
+#!/bin/bash --login
+
+#SBATCH --time=24:00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4G
+#SBATCH --job-name strelka
+#SBATCH --output strelka.out
+
+# Set the array size -- this is the number of files to process
+#SBATCH --array=1-4
+
+module purge
+ml Nextflow/24.10.2
+
+cd </PATH/TO>/evolved-nanno
+
+nextflow pull nf-core/sarek
+
+# Set the list of files to iterate over
+readarray -t files <sarek/samplesheets.txt
+
+nextflow run nf-core/sarek \
+	-r 3.5.1 \
+	-profile singularity \
+	--input sarek/samplesheets/${files[$SLURM_ARRAY_TASK_ID-1]} \
+	--outdir <PATH/TO/OUTDIR> \
+	--fasta </PATH/TO/GENOME.fa> \
+	--genome null \
+	--igenomes_ignore \
+	--skip_tools baserecalibrator \
+	--tools strelka \
+	-work-dir </PATH/TO/WORKDIR> \
+    -c sarek/slurm.config.sh \
